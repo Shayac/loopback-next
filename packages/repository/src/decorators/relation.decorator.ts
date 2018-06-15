@@ -12,6 +12,7 @@ import {
   inject,
   Injection,
   BindingKey,
+  MetadataInspector,
 } from '@loopback/context';
 import {DefaultCrudRepository} from '../repositories/legacy-juggler-bridge';
 import {repository} from './repository.decorator';
@@ -21,6 +22,8 @@ import {
   hasManyRepositoryFactory,
   HasManyDefinition,
   RelationDefinitionBase,
+  MODEL_PROPERTIES_KEY,
+  ModelMetadataHelper,
 } from '..';
 
 // tslint:disable:no-any
@@ -76,14 +79,46 @@ export function hasOne(definition?: Object) {
 
 export function hasMany(definition?: Partial<HasManyDefinition>) {
   return function(target: Object, key: string) {
-    const meta = Object.assign(
-      {
-        type: RelationType.hasMany,
-        keyTo: key,
-      },
-      definition,
+    const propMeta = MetadataInspector.getPropertyMetadata(
+      MODEL_PROPERTIES_KEY,
+      target,
+      key,
     );
-    PropertyDecoratorFactory.createDecorator(RELATIONS_KEY, meta)(target, key);
+
+    if (definition && definition.modelTo) {
+      const meta = Object.assign(
+        {
+          type: RelationType.hasMany,
+          modelTo: definition.modelTo,
+          modelFrom: target.constructor,
+          as: key,
+        },
+        definition,
+      );
+      PropertyDecoratorFactory.createDecorator(RELATIONS_KEY, meta)(
+        target,
+        key,
+      );
+    } else if (propMeta && propMeta.type) {
+      const meta = Object.assign(
+        {
+          type: RelationType.hasMany,
+          modelTo: propMeta.type,
+          modelFrom: target.constructor,
+          as: key,
+        },
+        definition,
+      );
+      PropertyDecoratorFactory.createDecorator(RELATIONS_KEY, meta)(
+        target,
+        key,
+      );
+    } else if (
+      (!propMeta && !definition) ||
+      (!propMeta && definition && !definition.modelTo)
+    ) {
+      throw new Error('Could not infer property type from @property decorator');
+    }
   };
 }
 

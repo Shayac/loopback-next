@@ -25,33 +25,25 @@ export function hasManyRepository<T extends Entity>(
   targetRepo: Class<EntityCrudRepository<T, typeof Entity.prototype.id>>,
 ) {
   return function(target: Object, key: string) {
-    // function orders(id: Partial<typeof target>) {
-    //   Object.assign({}, {keyTo: 'customerId'}, rel);
-    //   return hasManyRepositoryFactory(id, rel, targetRepo);
-    // }
-    // Object.defineProperty(target, key, {
-    //   value: orders,
-    //   enumerable: false,
-    //   configurable: false,
-    //   writable: false,
-    // });
-    // PropertyDecoratorFactory.createDecorator(RELATIONS_KEY, rel)(target, key);
     inject(
       BindingKey.create<typeof targetRepo>(`repositories.${targetRepo.name}`),
-      {},
+      {sourceRepo: target},
       resolver,
     )(target, key);
   };
 
   async function resolver(ctx: Context, injection: Injection) {
-    // const meta = Object.assign({}, injection.metadata);
     const tRepo = await ctx.get<
       DefaultCrudRepository<Entity, typeof Entity.prototype.id>
     >(injection.bindingKey);
+    const sRepo = await ctx.get<
+      DefaultCrudRepository<Entity, typeof Entity.prototype.id>
+    >('repositories.CustomerRepository');
+    const sourceModel = sRepo.entityClass;
     const targetModel = tRepo.entityClass;
     const allMeta = MetadataInspector.getAllPropertyMetadata<
       RelationDefinitionBase
-    >(RELATIONS_KEY, targetModel)!;
+    >(RELATIONS_KEY, sourceModel)!;
     let meta: HasManyDefinition;
     // what aboot multiple hasMany decorations?!?!?!?!?!?!
     Object.values(allMeta).forEach(value => {
@@ -59,9 +51,10 @@ export function hasManyRepository<T extends Entity>(
         meta = value as HasManyDefinition;
       }
     });
-    return function(constraint: Partial<Entity>) {
+    return function<S extends Entity>(constraint: Partial<S>) {
+      meta.keyFrom = Object.keys(constraint)[0];
       return hasManyRepositoryFactory(
-        constraint[meta.keyTo],
+        constraint[meta.keyFrom],
         meta,
         tRepo as DefaultCrudRepository<Entity, typeof Entity.prototype.id>,
       );

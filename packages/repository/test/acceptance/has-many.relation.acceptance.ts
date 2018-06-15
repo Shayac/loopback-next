@@ -19,6 +19,7 @@ import {
   ModelMetadataHelper,
   repository,
   RepositoryMixin,
+  HasManyEntityCrudRepository,
 } from '../..';
 import {expect} from '@loopback/testlab';
 import {
@@ -27,7 +28,7 @@ import {
   Reflector,
 } from '@loopback/context';
 import {Application} from '@loopback/core';
-import {hasManyRepository} from '../../src/decorators/relation.model.decorator';
+import {hasManyRepository} from '../../src/decorators/relation.repository.decorator';
 
 describe('HasMany relation', () => {
   // Given a Customer and Order models - see definitions at the bottom
@@ -138,8 +139,8 @@ describe('HasMany relation', () => {
     })
     name: string;
 
+    @hasMany({keyTo: 'customerId'})
     @property.array(Order)
-    @hasMany()
     orders: Order[];
   }
 
@@ -166,7 +167,9 @@ describe('HasMany relation', () => {
     // We should be able to inject a factory of OrderRepository by name or instance
     // and infer `Order` from the `OrderRepository`
     @hasManyRepository(OrderRepository) // The argument can be an object to pass in more info
-    public readonly orders: (key: Partial<Customer>) => OrderRepository;
+    public readonly orders: (
+      key: Partial<Customer>,
+    ) => HasManyEntityCrudRepository<Order, typeof Order.prototype.id>;
   }
 
   let orderRepo: EntityCrudRepository<Order, typeof Order.prototype.id>;
