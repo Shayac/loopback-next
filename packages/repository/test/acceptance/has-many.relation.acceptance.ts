@@ -10,7 +10,7 @@ import {
   DefaultCrudRepository,
   juggler,
   EntityCrudRepository,
-  relationRepositoryFactory,
+  hasManyRepositoryFactory,
   HasManyDefinition,
   RelationType,
 } from '../..';
@@ -40,7 +40,7 @@ describe('HasMany relation', () => {
       // The initial "involved" implementation is below
 
       //FIXME: should be automagically instantiated via DI or other means
-      const customerOrders = relationRepositoryFactory(
+      const customerOrders = hasManyRepositoryFactory(
         customerId,
         customerHasManyOrdersRelationMeta,
         orderRepo,

@@ -35,7 +35,7 @@ export interface HasManyDefinition extends RelationDefinitionBase {
  * relation attached to a datasource.
  *
  */
-export function relationRepositoryFactory<SourceID, T extends Entity, ID>(
+export function hasManyRepositoryFactory<SourceID, T extends Entity, ID>(
   sourceModelId: SourceID,
   relationMetadata: HasManyDefinition,
   targetRepository: EntityCrudRepository<T, ID>,

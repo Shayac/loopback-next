@@ -138,6 +138,26 @@ export interface Filter {
   include?: Inclusion[];
 }
 
+export function isFilter(arg: any): arg is Filter {
+  if (typeof arg === 'object') {
+    const filterFields = [
+      'where',
+      'fields',
+      'order',
+      'limit',
+      'skip',
+      'offset',
+      'include',
+    ];
+    for (const key in arg) {
+      if (!filterFields.includes(key)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 /**
  * A builder for Where object. It provides fleunt APIs to add clauses such as
  * `and`, `or`, and other operators.
@@ -448,24 +468,30 @@ export class FilterBuilder {
    * throw an error.
    * @param constraint a constraint object to merge with own filter object
    */
-  impose(constraint: AnyObject): this {
+  impose(constraint: Filter | Where): this {
     if (!this.filter) {
-      this.filter = constraint || {};
-    } else if (this.filter) {
-      if (
-        constraint.fields ||
-        constraint.include ||
-        constraint.limit ||
-        constraint.offset ||
-        constraint.order ||
-        constraint.skip
-      ) {
-        throw new Error(
-          'merging strategy for selection, pagination, and sorting not implemented',
-        );
+      // if constraint is a Where, turn into a Filter
+      if (!isFilter(constraint)) {
+        constraint = {where: constraint};
       }
-      this.filter.where = constraint.where
-        ? new WhereBuilder(this.filter.where).impose(constraint.where).build()
+      this.filter = (constraint as Filter) || {};
+    } else {
+      if (isFilter(constraint)) {
+        // throw error if imposed Filter has non-where fields
+        Object.keys(constraint).forEach(key => {
+          if (
+            ['fields', 'order', 'limit', 'skip', 'offset', 'include'].includes(
+              key,
+            )
+          ) {
+            throw new Error(
+              'merging strategy for selection, pagination, and sorting not implemented',
+            );
+          }
+        });
+      }
+      this.filter.where = isFilter(constraint)
+        ? new WhereBuilder(this.filter.where).impose(constraint.where!).build()
         : new WhereBuilder(this.filter.where).impose(constraint).build();
     }
     return this;

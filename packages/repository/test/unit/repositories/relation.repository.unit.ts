@@ -3,17 +3,17 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import {sinon, expect} from '@loopback/testlab';
+import {sinon} from '@loopback/testlab';
 import {
   EntityCrudRepository,
   HasManyEntityCrudRepository,
   DefaultCrudRepository,
   juggler,
   DefaultHasManyEntityCrudRepository,
-} from '../../../src/repositories/';
-import {Entity} from '../../../src/model';
-import {AnyObject} from '../../../src/common-types';
-import {Filter} from '../../../src/query';
+  Entity,
+  AnyObject,
+  Filter,
+} from '../../..';
 
 describe('relation repository', () => {
   context('hasManyEntityCrudRepository interface', () => {
@@ -22,6 +22,7 @@ describe('relation repository', () => {
      * interface. The TS Compiler will complain if the interface changes.
      */
 
+    // tslint:disable-next-line:no-unused-variable
     class testHasManyEntityCrudRepository<
       T extends Entity,
       TargetRepository extends EntityCrudRepository<

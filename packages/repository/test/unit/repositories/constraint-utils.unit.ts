@@ -4,25 +4,26 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {expect} from '@loopback/testlab';
-import {FilterBuilder, Filter, Where, WhereBuilder} from '../../../src/query';
 import {
+  FilterBuilder,
+  Filter,
+  Where,
+  WhereBuilder,
   constrainFilter,
   constrainWhere,
   constrainDataObject,
   constrainDataObjects,
-} from '../../../src/repositories/constraint-utils';
-import {DataObject} from '../../../src/common-types';
-import {Entity} from '../../../src/model';
+  Entity,
+} from '../../..';
 
 describe('constraint utility functions', () => {
-  let inputFilter: Filter = {};
-  let inputWhere: Where = {};
-
-  before(() => {
-    inputFilter = givenAFilter();
-    inputWhere = givenAWhere();
-  });
   context('constrainFilter', () => {
+    const inputFilter = filterBuilderHelper({
+      fields: {a: true},
+      where: {x: 'x'},
+      limit: 5,
+    });
+
     it('applies a where constraint', () => {
       const constraint = {id: '5'};
       const result = constrainFilter(inputFilter, constraint);
@@ -57,6 +58,8 @@ describe('constraint utility functions', () => {
     });
   });
   context('constrainWhere', () => {
+    const inputWhere = whereBuilderHelper({x: 'x', y: 'y'});
+
     it('enforces a constraint', () => {
       const constraint = {id: '5'};
       const result = constrainWhere(inputWhere, constraint);
@@ -74,13 +77,17 @@ describe('constraint utility functions', () => {
 
   context('constrainDataObject', () => {
     it('constrain a single data object', () => {
-      const input = givenADataObject();
+      const input = new Order({id: 1, description: 'order 1'});
       const constraint: Partial<Order> = {id: 2};
       const result = constrainDataObject(input, constraint);
       expect(result).to.containDeep(Object.assign({}, input, constraint));
     });
+
     it('constrain array of data objects', () => {
-      const input = givenArrayOfDataObjects();
+      const input = [
+        new Order({id: 1, description: 'order 1'}),
+        new Order({id: 2, description: 'order 2'}),
+      ];
       const constraint: Partial<Order> = {id: 3};
       const result = constrainDataObjects(input, constraint);
       expect(result[0]).to.containDeep(Object.assign({}, input[0], constraint));
@@ -89,28 +96,33 @@ describe('constraint utility functions', () => {
   });
 
   /*---------------HELPERS----------------*/
-  function givenAFilter() {
-    return new FilterBuilder()
-      .fields({a: true})
-      .where({x: 'x'})
-      .limit(5)
-      .build();
-  }
-  function givenAWhere() {
-    return new WhereBuilder()
-      .eq('x', 'x')
-      .eq('y', 'y')
-      .build();
+
+  function filterBuilderHelper(filter: Filter) {
+    const builder = new FilterBuilder();
+    for (const key in filter) {
+      switch (key) {
+        case 'fields':
+          builder.fields(filter[key]!);
+          break;
+        case 'where':
+          builder.where(filter[key]!);
+          break;
+        case 'limit':
+          builder.limit(filter[key]!);
+          break;
+        default:
+          throw Error('unsupported filter fields');
+      }
+    }
+    return builder.build();
   }
 
-  function givenADataObject(): DataObject<Order> {
-    return new Order({id: 1, description: 'order 1'});
-  }
-
-  function givenArrayOfDataObjects(): DataObject<Order>[] {
-    const order1 = new Order({id: 1, description: 'order 1'});
-    const order2 = new Order({id: 2, description: 'order 2'});
-    return [order1, order2];
+  function whereBuilderHelper(where: Where) {
+    const builder = new WhereBuilder();
+    for (const key in where) {
+      builder.eq(key, where[key]);
+    }
+    return builder.build();
   }
 
   class Order extends Entity {
